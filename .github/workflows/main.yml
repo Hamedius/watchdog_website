@@ -2,7 +2,7 @@ name: Website Watchdog
 
 on:
   schedule:
-    - cron: '*/2 * * * *'  # every 2 minutes
+    - cron: '*/20 * * * *'  # every 2 minutes
     - cron: '0 5 * * *'    # 07:00 CET
     - cron: '0 17 * * *'   # 19:00 CET
   workflow_dispatch:
