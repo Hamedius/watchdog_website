@@ -3,66 +3,82 @@ import smtplib
 import os
 import json
 import traceback
+from datetime import datetime
+import pytz
 from bs4 import BeautifulSoup
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from datetime import datetime
-import pytz
-import sys
 
-# ===== پیکربندی =====
+# === Configuration ===
 websites = [
     "https://www.artancompany.ir",
     "https://www.elintfh.com",
     "https://www.google.com"
 ]
+
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (compatible; WebsiteWatchdog/1.0)"
+}
+
 STATUS_FILE = "status.json"
 
+# Telegram & Email
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 EMAIL_FROM = os.getenv("EMAIL_FROM")
 EMAIL_TO = os.getenv("EMAIL_TO")
 EMAIL_PASS = os.getenv("EMAIL_PASS")
 
-def is_blank_page(html):
+def is_page_visibly_blank(html):
     soup = BeautifulSoup(html, "html.parser")
     body = soup.body
     if not body:
         return True
     for tag in body(["script", "style", "noscript"]):
         tag.decompose()
-    text = body.get_text(strip=True)
-    return len(text) < 20
+    visible_text = body.get_text(strip=True)
+    return len(visible_text) < 20
 
-def send_telegram(msg):
-    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
-        print("⛔ تلگرام تنظیم نشده")
-        return
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    data = {"chat_id": TELEGRAM_CHAT_ID, "text": msg}
+def fetch_status(url):
     try:
-        r = requests.post(url, data=data)
-        print(f"Telegram: {r.status_code}, {r.text}")
-    except Exception as e:
-        print("Telegram error:", e)
+        r = requests.head(url, headers=HEADERS, timeout=10)
+        if r.status_code == 200:
+            return "UP"
+    except Exception:
+        pass
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=10)
+        if r.status_code == 200:
+            return "BLANK" if is_page_visibly_blank(r.text) else "UP"
+        return f"DOWN-{r.status_code}"
+    except requests.exceptions.SSLError:
+        return "SSL_ERROR"
+    except Exception:
+        return "ERROR"
+
+def send_telegram(message):
+    if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+        data = {"chat_id": TELEGRAM_CHAT_ID, "text": message}
+        try:
+            requests.post(url, data=data)
+        except Exception as e:
+            print(f"Telegram error: {e}")
 
 def send_email(subject, body):
-    if not EMAIL_FROM or not EMAIL_TO or not EMAIL_PASS:
-        print("⛔ ایمیل تنظیم نشده")
-        return
-    try:
-        msg = MIMEMultipart()
-        msg["From"] = EMAIL_FROM
-        msg["To"] = EMAIL_TO
-        msg["Subject"] = subject
-        msg.attach(MIMEText(body, "plain"))
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
-            server.starttls()
-            server.login(EMAIL_FROM, EMAIL_PASS)
-            server.send_message(msg)
-        print("📧 ایمیل ارسال شد")
-    except Exception as e:
-        print("Email error:", e)
+    if EMAIL_FROM and EMAIL_TO and EMAIL_PASS:
+        try:
+            msg = MIMEMultipart()
+            msg["From"] = EMAIL_FROM
+            msg["To"] = EMAIL_TO
+            msg["Subject"] = subject
+            msg.attach(MIMEText(body, "plain", "utf-8"))
+            with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
+                smtp.starttls()
+                smtp.login(EMAIL_FROM, EMAIL_PASS)
+                smtp.send_message(msg)
+        except Exception as e:
+            print(f"Email error: {e}")
 
 def load_status():
     if os.path.exists(STATUS_FILE):
@@ -70,45 +86,41 @@ def load_status():
             return json.load(f)
     return {}
 
-def save_status(st):
+def save_status(statuses):
     with open(STATUS_FILE, "w") as f:
-        json.dump(st, f, indent=2)
+        json.dump(statuses, f, indent=2)
 
-def check_websites(mode="change-only"):
-    old = load_status()
-    new = {}
-    changes = []
+def is_time_to_report():
+    now = datetime.now(pytz.timezone("Europe/Rome"))
+    return now.hour in [7, 19] and now.minute == 0
+
+def check_websites():
+    old_status = load_status()
+    new_status = {}
+    changed = False
 
     for site in websites:
-        try:
-            r = requests.get(site, timeout=10)
-            status = "UP" if r.status_code == 200 and not is_blank_page(r.text) else "BLANK"
-        except Exception as e:
-            print("❌", site, "error:", e)
-            traceback.print_exc()
-            status = "DOWN"
-        new[site] = status
-        if old.get(site) != status:
-            changes.append((site, old.get(site, "UNKNOWN"), status))
+        status = fetch_status(site)
+        new_status[site] = status
+        old = old_status.get(site)
 
-    save_status(new)
-    tztime = datetime.now(pytz.timezone("Europe/Rome")).strftime("%Y-%m-%d %H:%M:%S")
-
-    if mode == "change-only":
-        for site, o, n in changes:
-            msg = f"⚠️ تغییر وضعیت: {site}\n{o} → {n}"
+        if old != status:
+            msg = f"{site} ⚠️ STATUS CHANGED: {old or 'UNKNOWN'} → {status}"
+            print(msg)
             send_telegram(msg)
-            send_email(f"Website status change: {site}", msg)
-
-    elif mode == "daily-report":
-        if changes:
-            msg = "\n".join([f"{s}: {o} → {n}" for s, o, n in changes])
+            send_email("Website Status Changed", msg)
+            changed = True
         else:
-            msg = "همه سایت‌ها سالم هستند ✅"
-        full = f"🕓 گزارش {tztime}\n{msg}"
-        send_telegram(full)
-        send_email("Daily website report", full)
+            print(f"{site} ✅ No Change: {status}")
+
+    save_status(new_status)
+
+    if is_time_to_report():
+        now = datetime.now(pytz.timezone("Europe/Rome")).strftime("%Y-%m-%d %H:%M:%S")
+        statuses = [f"{site}: {new_status[site]}" for site in websites]
+        msg = f"🕓 {now} – Daily Report:\n" + "\n".join(statuses)
+        send_telegram(msg)
+        send_email("Daily Website Status", msg)
 
 if __name__ == "__main__":
-    mode = sys.argv[1] if len(sys.argv) > 1 else "change-only"
-    check_websites(mode)
+    check_websites()
