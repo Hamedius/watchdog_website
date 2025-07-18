@@ -1,0 +1,48 @@
+name: Website Watchdog
+
+on:
+  schedule:
+    - cron: '*/2 * * * *'  # هر ۲ دقیقه
+    - cron: '0 5 * * *'    # 07:00 CET
+    - cron: '0 17 * * *'   # 19:00 CET
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - run: pip install requests beautifulsoup4 pytz
+
+      - name: Run watchdog
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+        run: |
+          HOUR=$(TZ=Europe/Rome date +'%H')
+          if [ "$HOUR" == "07" ] || [ "$HOUR" == "19" ]; then
+            python watchdog.py daily-report
+          else
+            python watchdog.py change-only
+          fi
+
+      - name: Commit status.json
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add status.json
+          git diff --cached --quiet || (git commit -m "🔄 status update" && git push origin main)
