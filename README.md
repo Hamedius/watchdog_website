@@ -42,16 +42,19 @@ Note: Adjust file names above if they are slightly different in your repo.
 ⸻
 
 How it works
-	1.	Configuration
+
+1. Configuration
 	•	status.json contains the list of websites you want to monitor and (optionally) existing status data.
 	•	Each entry typically includes at least a url field. You can add more fields as needed (name, description, etc.).
-	2.	Check run
+
+2. Check run
 	•	watchdog.py reads status.json.
 	•	For each URL:
 	•	Sends an HTTP request.
 	•	Determines if it is up or down based on the response.
 	•	Updates the JSON data (status, status code, last checked time).
-	3.	GitHub Actions
+
+3. GitHub Actions
 	•	The workflow in .github/workflows/ runs watchdog.py on a schedule (using cron).
 	•	After each run, the updated status.json is committed back to the repository.
 
