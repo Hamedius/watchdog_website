@@ -30,14 +30,9 @@ It’s designed to be lightweight and easy to run completely from GitHub (no ext
 
 ```text
 watchdog_website/
-├─ .github/
-│  └─ workflows/
-│      └─ <workflow_file>.yml    # CI workflow that runs watchdog.py on a schedule
-├─ status.json                    # List of websites and their latest status
-├─ watchdog.py                    # Main Python script for checking websites
-└─ README.md
-
-Note: Adjust file names above if they are slightly different in your repo.
+├─ README.md
+├─ status.json
+└─ watchdog.py
 
 ⸻
 
