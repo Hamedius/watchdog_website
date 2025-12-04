@@ -10,19 +10,19 @@ It’s designed to be lightweight and easy to run completely from GitHub (no ext
 ## Features
 
 - 🔁 **Automatic checks via GitHub Actions**  
-  A workflow in `.github/workflows/` runs `watchdog.py` on a schedule (e.g. every few minutes / hours).
+  A workflow in `.github/workflows/` runs `watchdog.py` on a schedule.
 
 - 🌐 **Multiple websites**  
-  A list of target URLs is stored in `status.json`. The script loops through them and sends HTTP requests.
+  The list of target URLs is stored in `status.json`.
 
 - ✅ **Status tracking**  
-  For each website, the script updates fields like:
-  - HTTP status (up / down)
-  - Status code (e.g. 200, 404, 500)
-  - Last check timestamp
+  For each website, the script updates:
+  - HTTP status (up / down)  
+  - Status code (e.g., 200, 404, 500)  
+  - Last check timestamp  
 
 - 📄 **Static JSON output**  
-  The `status.json` file can be used by a separate frontend (static site) to show a simple status dashboard.
+  `status.json` can be used by another frontend or dashboard.
 
 ---
 
@@ -33,57 +33,60 @@ watchdog_website/
 ├─ README.md
 ├─ status.json
 └─ watchdog.py
+```
 
+---
 
-⸻
+## How it works
 
-How it works
+### 1. Configuration
+- `status.json` contains the list of websites to monitor.  
+- Each entry includes at least `url`, and optionally `name`, `description`, etc.
 
-1. Configuration
-	•	status.json contains the list of websites you want to monitor and (optionally) existing status data.
-	•	Each entry typically includes at least a url field. You can add more fields as needed (name, description, etc.).
+### 2. Check run
+- `watchdog.py` reads `status.json`.  
+- For each URL:
+  - Sends an HTTP request.  
+  - Determines UP/DOWN state.  
+  - Updates status, code, and last-checked time.
 
-2. Check run
-	•	watchdog.py reads status.json.
-	•	For each URL:
-	•	Sends an HTTP request.
-	•	Determines if it is up or down based on the response.
-	•	Updates the JSON data (status, status code, last checked time).
+### 3. GitHub Actions
+- Runs `watchdog.py` on a schedule (cron).  
+- Commits updated `status.json` back into the repository automatically.
 
-3. GitHub Actions
-	•	The workflow in .github/workflows/ runs watchdog.py on a schedule (using cron).
-	•	After each run, the updated status.json is committed back to the repository.
+Your repo will always contain the latest status results.
 
-This means your repo always contains the latest status of each website.
+---
 
-⸻
+## Getting started (local run)
 
-Getting started (local run)
-
-1. Clone the repository
-
+### 1. Clone the repository
+```bash
 git clone https://github.com/Hamedius/watchdog_website.git
 cd watchdog_website
+```
 
-2. Create a virtual environment (optional but recommended)
-
+### 2. Create a virtual environment (optional but recommended)
+```bash
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
+```
 
-3. Install dependencies
-
+### 3. Install dependencies
+```bash
 pip install -r requirements.txt
+```
 
-If you don’t have a requirements.txt yet, create one containing at least:
-
+If you don’t have a `requirements.txt`, simply create one containing:
+```
 requests
+```
 
+### 4. Configure `status.json`
 
+Example format:
 
-4. Configure status.json
-
-Edit status.json and add your own websites. Example structure:
-
+```json
 [
   {
     "name": "Example",
@@ -93,43 +96,46 @@ Edit status.json and add your own websites. Example structure:
     "last_check": null
   }
 ]
+```
 
-Adjust the fields to match what watchdog.py expects.
-
-5. Run the script
-
+### 5. Run the script
+```bash
 python watchdog.py
+```
 
-After running, status.json should be updated with the latest status information.
+After running, `status.json` will be updated.
 
-⸻
+---
 
-GitHub Actions setup
+## GitHub Actions setup
 
-The workflow file in .github/workflows/:
-	•	Uses a Python runner (e.g. ubuntu-latest).
-	•	Installs dependencies (pip install -r requirements.txt).
-	•	Runs python watchdog.py.
-	•	Commits and pushes the updated status.json back to the repository.
+The workflow in `.github/workflows/`:
 
-If you want to change how often checks run, modify the cron expression:
+- Uses a Python runner (e.g., `ubuntu-latest`)  
+- Installs dependencies  
+- Runs `python watchdog.py`  
+- Commits the updated `status.json` back to the repo  
 
+To change frequency, modify the cron expression:
+
+```yaml
 on:
   schedule:
-    - cron: "*/30 * * * *"   # every 30 minutes, example
+    - cron: "*/30 * * * *"   # every 30 minutes
+```
 
+---
 
-⸻
+## Possible improvements
 
-Possible improvements
-	•	Add notification integration (e.g. email, Telegram, Slack webhook) when a site goes down.
-	•	Expose status.json to a static frontend to visualize uptime history.
-	•	Store a history of checks instead of only the latest status.
-	•	Export metrics to a time-series database or a monitoring service.
+- Add Telegram / Slack / email notifications  
+- Track history instead of only the latest check  
+- Create a frontend dashboard to visualize uptime  
+- Export metrics to monitoring services  
 
-⸻
+---
 
-Author
+## Author
 
-Hamed Nahvi
+**Hamed Nahvi**  
 GitHub: @Hamedius
