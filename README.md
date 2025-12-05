@@ -9,19 +9,19 @@ It’s designed to be lightweight and easy to run completely from GitHub (no ext
 
 ## Features
 
-- 🔁 **Automatic checks via GitHub Actions**  
+-  **Automatic checks via GitHub Actions**  
   A workflow in `.github/workflows/` runs `watchdog.py` on a schedule.
 
-- 🌐 **Multiple websites**  
+-  **Multiple websites**  
   The list of target URLs is stored in `status.json`.
 
-- ✅ **Status tracking**  
+-  **Status tracking**  
   For each website, the script updates:
   - HTTP status (up / down)  
   - Status code (e.g., 200, 404, 500)  
   - Last check timestamp  
 
-- 📄 **Static JSON output**  
+-  **Static JSON output**  
   `status.json` can be used by another frontend or dashboard.
 
 ---
