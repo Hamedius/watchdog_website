@@ -62,24 +62,29 @@ def fetch_status(url):
 def send_telegram(message):
     if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
         url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-        data = {"chat_id": TELEGRAM_CHAT_ID, "text": message}
-        try:
-            requests.post(url, data=data)
-        except Exception as e:
-            print(f"Telegram error: {e}")
 
+        chat_ids = [c.strip() for c in TELEGRAM_CHAT_ID.split(",")]
+
+        for chat_id in chat_ids:
+            data = {"chat_id": chat_id, "text": message}
+            try:
+                requests.post(url, data=data)
+            except Exception as e:
+                print(f"Telegram error: {e}")
+                
 def send_email(subject, body):
     if EMAIL_FROM and EMAIL_TO and EMAIL_PASS:
         try:
             msg = MIMEMultipart()
             msg["From"] = EMAIL_FROM
-            msg["To"] = EMAIL_TO
+            recipients = [e.strip() for e in EMAIL_TO.split(",")]
+            msg["To"] = ", ".join(recipients)
             msg["Subject"] = subject
             msg.attach(MIMEText(body, "plain", "utf-8"))
             with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
                 smtp.starttls()
                 smtp.login(EMAIL_FROM, EMAIL_PASS)
-                smtp.send_message(msg)
+                smtp.sendmail(EMAIL_FROM, recipients, msg.as_string())
         except Exception as e:
             print(f"Email error: {e}")
 
