@@ -2,6 +2,7 @@
   "https://www.artancompany.ir": "ERROR",
   "https://www.elintfh.com": "ERROR",
   "https://www.google.com": "UP",
-  "https://web.bale.ai": "UP",
-  "https://web.splus.ir": "UP"
+  "https://web.bale.ai": "ERROR",
+  "https://web.splus.ir": "ERROR",
+  "https://web.rubika.ir/": "UP"
 }
