@@ -13,7 +13,9 @@ from email.mime.multipart import MIMEMultipart
 websites = [
     "https://www.artancompany.ir",
     "https://www.elintfh.com",
-    "https://www.google.com"
+    "https://www.google.com",
+    "https://web.bale.ai",
+    "https://web.splus.ir"
 ]
 
 HEADERS = {
