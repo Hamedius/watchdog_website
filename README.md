@@ -125,7 +125,15 @@ on:
 ```
 
 ---
+## How To Modify Email recievers or Telegram Recievers?
+- in secrets modify Emailto and Telegram CHat Id 
+ex:
+123@gmail.com,456@gmail.com
 
+seperate by ","
+
+
+---
 ## Possible improvements
 
 - Add Telegram / Slack / email notifications  
