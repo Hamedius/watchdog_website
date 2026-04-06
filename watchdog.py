@@ -15,7 +15,8 @@ websites = [
     "https://www.elintfh.com",
     "https://www.google.com",
     "https://web.bale.ai",
-    "https://web.splus.ir"
+    "https://web.splus.ir",
+    "https://web.rubika.ir"
 ]
 
 HEADERS = {
